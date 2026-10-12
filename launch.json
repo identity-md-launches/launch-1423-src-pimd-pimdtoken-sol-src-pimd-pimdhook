@@ -1,0 +1,34 @@
+{
+  "kind": "univ4_hook",
+  "hook": {
+    "contract": "PimdHook",
+    "constructorArgs": [
+      "$poolManager",
+      "$token",
+      "$factory"
+    ],
+    "permissions": [
+      "beforeInitialize",
+      "afterInitialize",
+      "beforeAddLiquidity",
+      "beforeRemoveLiquidity",
+      "beforeSwap",
+      "afterSwap",
+      "beforeSwapReturnDelta",
+      "afterSwapReturnDelta"
+    ]
+  },
+  "token": {
+    "contract": "PimdToken",
+    "name": "Ponzinomics",
+    "symbol": "PIMD",
+    "decimals": 18
+  },
+  "pool": {
+    "pairedCurrency": "0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127",
+    "fee": 12500,
+    "tickSpacing": 60,
+    "initialPrice": "79228162514264337593543950336"
+  },
+  "notes": "audit-imported-code: Reviewed src/pimd/PimdToken.sol, src/pimd/PimdHook.sol, src/pimd/PimdEngine.sol, src/libraries/L2Block.sol and script/DeployPimd.s.sol as imported, before writing this manifest; no source was adapted or defects repaired. Findings: (1) Launch is blocked if PIMD sorts below IMD. beforeInitialize requires IMD as currency0 and PIMD as currency1; PoolManager enforces ascending addresses. The imported deploy script provides no token-address guarantee; tests mine token addresses and do not prove factory compatibility. (2) The brief contains conflicting opening-price statements. Actual beforeInitialize accepts any valid opening price and reads the tick only for Launched; 129000 and tolerance 300 are informational constants, so the claimed +/-300 rejection is absent. The manifest keeps the required one-to-one initialPrice; the factory derives the actual opening price from the policy's 2500 IMD market cap. (3) The hook accepts fees 500, 3000, 10000 and 12500, and does not pin tickSpacing to 60. It accepts this manifest's 12500 and rejects zero/dynamic fees; exact launch fee and spacing depend on policy/factory enforcement. (4) DeployPimd deploys only a new engine, permits environment overrides and makes EXPECT_ENGINE optional. It is unsuitable for this launch and was not executed. Deploy only PimdToken and PimdHook on Robinhood Chain (4663); reuse the baked-in engine at 0xffdb5dd341f692a29b5a0d3d1577df683c1baca4 without redeploying it. Engine bind is a separate one-time binder action after initialization, requiring matching token, hook, IMD and PoolManager and exclusion of the launch distributor. No deployment or binding was performed by this manifest task. Confirmed in imported source: token constructor takes no arguments, mints exactly 1000000000 tokens at 18 decimals once to its deployer, and exposes no owner, mint, burn or pause; transfers to the dead address leave totalSupply unchanged. Hook constructor has only the three listed arguments and no owner parameter. beforeInitialize is PoolManager-only, factory-only, rejects a second pool and wrong currencies. afterInitialize is PoolManager-only and returns its selector. beforeAddLiquidity admits the factory's first positive add only; all later adds fail. beforeRemoveLiquidity rejects every negative delta while allowing zero-delta LP fee collection. All eight declared permissions match getHookPermissions. Buy/sell taxes are 2.4%/5.6% in IMD ERC-6909 claims, split 75% holders/25% team; caller tips come from the team share, and the separate 1.25% LP fee is untouched. Engine register, prune, fire, tally and pay check the PoolManager transient lock; holder balances are not sampled while unlocked. Tally is keeper-only and covers the whole set atomically. The tier ladder remains 0x below 1h, then 0.5x/1x/1.5x/2x/3x at 1h/1d/3d/7d/14d. Streaks observe sampled balances, so transfers out and back between tallies are invisible; loss of all immutable keepers stops distributions. L2Block uses a gas-capped ArbSys call with block.number fallback; the launch cap also has timestamp bounds. At Robinhood block 86707143 the existing engine runtime matched the compiled imported source outside constructor-immutable slots. Live getters matched all production immutable defaults and reported unbound; both default keepers were enabled. These are read-only checks, not launch admission or deployment approval. Validation: forge build passed with warnings; forge test passed all 92 tests, including six live fork tests. Manifest fields, constructor ABIs and permissions were checked."
+}
